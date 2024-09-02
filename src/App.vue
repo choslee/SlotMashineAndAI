@@ -1,12 +1,11 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import SlotMachine from './components/SlotMachine.vue'
+</script>
 
 <template>
-  <h1>Naslov</h1>
-  <div>
-    Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto deserunt impedit, ratione
-    dolores suscipit vel odio voluptatem repellendus autem sed, doloribus deleniti consequuntur
-    magni? Adipisci blanditiis voluptates sed ipsam provident?
-  </div>
+  <SlotMachine />
 </template>
 
-<style scoped></style>
+<style lang="scss">
+@import './assets/main.css';
+</style>
