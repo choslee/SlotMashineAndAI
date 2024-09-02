@@ -30,8 +30,8 @@ export const useSlotStore = defineStore('slot', {
         this.images[index] = { type, src: newSrc, label }
       }
     },
-    initializeImages(initialImages: SlotImage[]) {
-      this.images = initialImages
+    initializeImages(images: SlotImage[]) {
+      this.images = [...images]
     }
   }
 })
