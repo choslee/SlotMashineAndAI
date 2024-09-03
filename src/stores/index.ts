@@ -51,7 +51,8 @@ export interface SlotImage {
 
 export const useSlotStore = defineStore('slot', {
   state: () => ({
-    images: [] as SlotImage[]
+    images: [] as SlotImage[], // Store for images
+    previousImages: [] as SlotImage[] // Store for previous images
   }),
   actions: {
     updateImage(type: ImageTypes, newSrc: string, label?: 'bonus' | 'scatter' | 'wild') {
@@ -62,6 +63,11 @@ export const useSlotStore = defineStore('slot', {
     },
     initializeImages(images: SlotImage[]) {
       this.images = [...images]
+    },
+    restorePreviousImages() {
+      if (this.previousImages.length > 0) {
+        this.images = [...this.previousImages] // Restore previous images
+      }
     }
   }
 })

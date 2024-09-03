@@ -60,14 +60,25 @@ const generateNewImages = async () => {
 
 const cancelRequest = () => {
   console.log('Cancel button clicked')
+
   if (abortRequestController) {
     console.log('Aborting ongoing requests')
     abortRequestController.abort()
     abortRequestController = null
   }
 
-  console.log('Resetting images to initial state')
-  slotStore.initializeImages(starterImages)
+  // Check if all images have a non-empty src value
+  const allImagesHaveSrc = slotStore.images.every(
+    (image) => image.src.trim() !== 'data:image/jpeg;base64,newImageSrc'
+  )
+
+  if (allImagesHaveSrc) {
+    console.log('Restoring previous images from store')
+    slotStore.restorePreviousImages() // Assuming you have a method to restore previous images
+  } else {
+    console.log('Resetting images to initial state')
+    slotStore.initializeImages(starterImages)
+  }
 
   isFetching.value = false
 }
