@@ -117,6 +117,12 @@ const selectMode = (mode: string) => {
   <div class="slot-machine">
     <img src="@/assets/osnove.jpg" alt="Background" class="background" />
 
+    <!-- Loader Overlay -->
+    <div v-if="isFetching" class="loader-overlay">
+      <div class="loader"></div>
+      <p>Please wait, generating images!</p>
+    </div>
+
     <!-- Additional Buttons -->
     <div class="additional-buttons">
       <button
@@ -289,6 +295,7 @@ const selectMode = (mode: string) => {
   font-weight: bold;
   cursor: pointer;
   border: 1px solid #464545;
+  z-index: 11;
 }
 
 .generate-btn::before,
@@ -311,5 +318,45 @@ const selectMode = (mode: string) => {
 .generate-btn:active::before,
 .cancel-btn:active::before {
   background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Loader Styles */
+.loader-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent overlay */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10; /* Ensure the loader is on top */
+}
+
+.loader {
+  border: 8px solid #f3f3f3; /* Light grey */
+  border-top: 8px solid #3498db; /* Blue */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loader-overlay p {
+  color: #fff;
+  font-size: 20px;
+  font-weight: bold;
 }
 </style>
