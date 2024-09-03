@@ -16,9 +16,15 @@ import imgK from '@/assets/K.jpg'
 import imgQ from '@/assets/Q.jpg'
 import imgDog from '@/assets/dog.jpg'
 
+// Import button images
+import makeRound from '@/assets/make_round.png'
+import makeRoundPress from '@/assets/make_round_press.png'
+
 const slotStore = useSlotStore()
 const userPrompt = ref('')
 const isFetching = ref(false) // Track API call state
+const selectedMode = ref('Free form') // Track selected mode (default to "Free form")
+const isPressed = ref(false)
 let abortController: AbortController | null = null
 
 const initialImages = [
@@ -90,11 +96,37 @@ const fetchDummyApi = async (prompt: string, type: ImageTypes, signal: AbortSign
     }, 1000)
   })
 }
+
+const selectMode = (mode: string) => {
+  selectedMode.value = mode
+}
 </script>
 
 <template>
   <div class="slot-machine">
     <img src="@/assets/osnove.jpg" alt="Background" class="background" />
+
+    <!-- Additional Buttons -->
+    <div class="additional-buttons">
+      <button
+        class="big-button"
+        @mousedown="isPressed = true"
+        @mouseup="isPressed = false"
+      ></button>
+      <button
+        @click="selectMode('Cyberpunk')"
+        :class="['small-button', selectedMode === 'Cyberpunk' ? 'selected' : '']"
+      >
+        Cyberpunk
+      </button>
+      <button
+        @click="selectMode('Free form')"
+        :class="['small-button', selectedMode === 'Free form' ? 'selected' : '']"
+      >
+        Free form
+      </button>
+    </div>
+
     <div class="reel-container">
       <SlotReel
         v-for="(image, index) in slotStore.images"
@@ -130,6 +162,60 @@ const fetchDummyApi = async (prompt: string, type: ImageTypes, signal: AbortSign
   height: 600px;
   display: flex;
   flex-wrap: wrap;
+}
+
+.additional-buttons {
+  position: absolute;
+  top: 288px;
+  left: 235px;
+}
+
+.big-button {
+  width: 163px;
+  height: 163px;
+  background-size: contain;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 20px;
+  background: url('@/assets/make_round.png') no-repeat center center;
+}
+
+.big-button:active {
+  background: url('@/assets/make_round_press.png') no-repeat center center;
+  background-size: contain;
+}
+
+.small-button {
+  position: absolute; /* Allow positioning with top and left */
+  width: 140px;
+  height: 45px;
+  background-color: #007bff; /* Default button color */
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  text-align: center;
+  line-height: 45px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2); /* 3D effect for unselected button */
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.small-button:nth-child(2) {
+  top: 245px; /* Position relative to the big button */
+  left: 10px; /* Adjust left position as needed */
+}
+
+.small-button:nth-child(3) {
+  top: 300px; /* Position relative to the big button */
+  left: 10px; /* Adjust left position as needed */
+}
+
+.small-button.selected {
+  background-color: #339cff; /* Lighter shade when selected */
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4); /* Pressed 3D effect for selected button */
 }
 
 .prompt-input {
