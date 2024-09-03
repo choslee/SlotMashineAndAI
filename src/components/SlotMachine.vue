@@ -1,20 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { useSlotStore, ImageTypes } from '@/stores/index'
-import type { SlotImage } from '@/stores/index'
+import { useSlotStore, ImageTypes, starterImages } from '@/stores/index'
 import SlotReel from '@/components/SlotReel.vue'
-
-// Import the slot images
-import imgA from '@/assets/A.jpg'
-import img9 from '@/assets/9.jpg'
-import img10 from '@/assets/10.jpg'
-import imgJ from '@/assets/J.jpg'
-import imgFace from '@/assets/face.jpg'
-import imgGun from '@/assets/gun.jpg'
-import imgHat from '@/assets/hat.jpg'
-import imgK from '@/assets/K.jpg'
-import imgQ from '@/assets/Q.jpg'
-import imgDog from '@/assets/dog.jpg'
 
 // Import button images
 import makeRound from '@/assets/make_round.png'
@@ -23,30 +10,13 @@ import makeRoundPress from '@/assets/make_round_press.png'
 const slotStore = useSlotStore()
 const userPrompt = ref('')
 const isFetching = ref(false) // Track API call state
-const selectedMode = ref('Free form') // Track selected mode (default to "Free form")
+const selectedMode = ref('Free form')
 const isPressed = ref(false)
-let abortController: AbortController | null = null
-
-const initialImages = [
-  { type: ImageTypes.A, src: imgA },
-  { type: ImageTypes.N9, src: img9 },
-  { type: ImageTypes.N10, src: img10 },
-  { type: ImageTypes.J, src: imgJ },
-  { type: ImageTypes.Face, src: imgFace },
-  { type: ImageTypes.Gun, src: imgGun, label: 'bonus' },
-  { type: ImageTypes.Hat, src: imgHat, label: 'scatter' },
-  { type: ImageTypes.J, src: imgJ },
-  { type: ImageTypes.K, src: imgK },
-  { type: ImageTypes.Q, src: imgQ },
-  { type: ImageTypes.A, src: imgA },
-  { type: ImageTypes.K, src: imgK },
-  { type: ImageTypes.N9, src: img9 },
-  { type: ImageTypes.Dog, src: imgDog, label: 'wild' },
-  { type: ImageTypes.Q, src: imgQ }
-] as SlotImage[]
+let abortRequestController: AbortController | null = null
+let cyberPunkPrompt = 'Cyberpunk'
 
 onMounted(() => {
-  slotStore.initializeImages(initialImages)
+  slotStore.initializeImages(starterImages)
 })
 
 const generateNewImages = async () => {
@@ -55,14 +25,23 @@ const generateNewImages = async () => {
     return
   }
 
-  abortController = new AbortController()
-  const { signal } = abortController
-  isFetching.value = true // Set fetching state to true
+  abortRequestController = new AbortController()
+  const { signal } = abortRequestController
+  isFetching.value = true
 
   try {
     for (const image of slotStore.images) {
-      const response = await fetchDummyApi(userPrompt.value, image.type, signal)
-      slotStore.updateImage(image.type, response.newSrc, image.label)
+      if (selectedMode.value === 'Free form') {
+        console.log(
+          'After Free form input ' + userPrompt.value + ' fetching new image for:' + image.type
+        )
+        const response = await fetchDummyApi(userPrompt.value, image.type, signal)
+        slotStore.updateImage(image.type, response.newSrc, image.label)
+      } else if (selectedMode.value === 'Cyberpunk') {
+        console.log('After Cyberpunk selected fetching new image for:', image.type)
+        const response = await fetchDummyApi(cyberPunkPrompt, image.type, signal)
+        slotStore.updateImage(image.type, response.newSrc, image.label)
+      }
     }
   } catch (err) {
     if (err instanceof Error) {
@@ -81,14 +60,16 @@ const generateNewImages = async () => {
 
 const cancelRequest = () => {
   console.log('Cancel button clicked')
-  if (abortController) {
+  if (abortRequestController) {
     console.log('Aborting ongoing requests')
-    abortController.abort() // Abort ongoing requests
-    abortController = null // Reset the controller
+    abortRequestController.abort()
+    abortRequestController = null
   }
+
   console.log('Resetting images to initial state')
-  slotStore.initializeImages(initialImages) // Reset to initial images
-  isFetching.value = false // Reset fetching state
+  slotStore.initializeImages(starterImages)
+
+  isFetching.value = false
 }
 
 const handleButtonClick = () => {
