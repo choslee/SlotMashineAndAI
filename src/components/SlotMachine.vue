@@ -130,7 +130,6 @@ watch(userPrompt, (newValue) => {
       <p>Please wait, generating images!</p>
     </div>
 
-    <!-- Additional Buttons -->
     <div class="additional-buttons">
       <button
         class="big-button"
@@ -206,48 +205,15 @@ watch(userPrompt, (newValue) => {
   background: url('@/assets/make_round.png') no-repeat center center;
 }
 
-.big-button:disabled,
-.generate-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.6; /* Add some opacity to indicate the button is disabled */
-}
-
 .big-button:active {
   background: url('@/assets/make_round_press.png') no-repeat center center;
   background-size: contain;
 }
 
-.small-button {
-  position: absolute; /* Allow positioning with top and left */
-  width: 140px;
-  height: 45px;
-  background-color: #007bff; /* Default button color */
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-  text-align: center;
-  line-height: 45px;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2); /* 3D effect for unselected button */
-  transition:
-    background-color 0.3s ease,
-    box-shadow 0.3s ease;
-}
-
-.small-button:nth-child(2) {
-  top: 245px; /* Position relative to the big button */
-  left: 10px; /* Adjust left position as needed */
-}
-
-.small-button:nth-child(3) {
-  top: 300px; /* Position relative to the big button */
-  left: 10px; /* Adjust left position as needed */
-}
-
-.small-button.selected {
-  background-color: #339cff; /* Lighter shade when selected */
-  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4); /* Pressed 3D effect for selected button */
+.big-button:disabled,
+.generate-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.8;
 }
 
 .prompt-input {
@@ -265,14 +231,6 @@ watch(userPrompt, (newValue) => {
   }
 }
 
-.generate-btn {
-  position: absolute;
-  top: 766px;
-  width: 222px;
-  height: 54px;
-  background-size: cover;
-}
-
 .cancel-btn {
   position: absolute;
   top: 766px;
@@ -287,7 +245,7 @@ watch(userPrompt, (newValue) => {
     -1px 1px 0 #000,
     1px 1px 0 #000;
   left: 1400px;
-  background: #ff0000;
+  background: #c33131;
   color: #ffffff;
   text-align: center;
   line-height: 54px;
@@ -298,6 +256,11 @@ watch(userPrompt, (newValue) => {
 }
 
 .generate-btn {
+  position: absolute;
+  top: 766px;
+  width: 222px;
+  height: 54px;
+  background-size: cover;
   left: 1157px;
   background: url('@/assets/make.png') no-repeat center center;
 }
@@ -322,6 +285,39 @@ watch(userPrompt, (newValue) => {
 .generate-btn:active::before,
 .cancel-btn:active::before {
   background-color: rgba(0, 0, 0, 0.3);
+}
+
+.small-button {
+  position: absolute; /* Allow positioning with top and left */
+  width: 140px;
+  height: 45px;
+  background-color: #3d1603; /* Default button color */
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  text-align: center;
+  line-height: 45px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2); /* 3D effect for unselected button */
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.small-button:nth-child(2) {
+  top: 245px; /* Position relative to the big button */
+  left: 10px; /* Adjust left position as needed */
+}
+
+.small-button:nth-child(3) {
+  top: 300px; /* Position relative to the big button */
+  left: 10px; /* Adjust left position as needed */
+}
+
+.small-button.selected {
+  background-color: #4f2d1b; /* Lighter shade when selected */
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4); /* Pressed 3D effect for selected button */
 }
 
 /* Loader Styles */
