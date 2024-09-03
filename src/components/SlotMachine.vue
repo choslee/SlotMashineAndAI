@@ -50,6 +50,11 @@ onMounted(() => {
 })
 
 const generateNewImages = async () => {
+  if (selectedMode.value === 'Free form' && userPrompt.value.trim() === '') {
+    alert('You have selected "Free form", you must enter a prompt.')
+    return
+  }
+
   abortController = new AbortController()
   const { signal } = abortController
   isFetching.value = true // Set fetching state to true
@@ -86,6 +91,12 @@ const cancelRequest = () => {
   isFetching.value = false // Reset fetching state
 }
 
+const handleButtonClick = () => {
+  if (!isFetching.value) {
+    generateNewImages()
+  }
+}
+
 const fetchDummyApi = async (prompt: string, type: ImageTypes, signal: AbortSignal) => {
   return new Promise<{ newSrc: string }>((resolve, reject) => {
     setTimeout(() => {
@@ -110,8 +121,10 @@ const selectMode = (mode: string) => {
     <div class="additional-buttons">
       <button
         class="big-button"
+        :disabled="isFetching"
         @mousedown="isPressed = true"
         @mouseup="isPressed = false"
+        @click="handleButtonClick"
       ></button>
       <button
         @click="selectMode('Cyberpunk')"
@@ -136,7 +149,7 @@ const selectMode = (mode: string) => {
       />
     </div>
     <input v-model="userPrompt" class="prompt-input" type="text" placeholder="Enter prompt here" />
-    <button @click="generateNewImages" class="generate-btn"></button>
+    <button :disabled="isFetching" @click="handleButtonClick" class="generate-btn"></button>
     <button v-if="isFetching" @click="cancelRequest" class="cancel-btn">Cancel</button>
   </div>
 </template>
@@ -178,6 +191,12 @@ const selectMode = (mode: string) => {
   cursor: pointer;
   margin-bottom: 20px;
   background: url('@/assets/make_round.png') no-repeat center center;
+}
+
+.big-button:disabled,
+.generate-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6; /* Add some opacity to indicate the button is disabled */
 }
 
 .big-button:active {
