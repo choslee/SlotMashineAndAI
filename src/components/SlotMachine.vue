@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useSlotStore, ImageTypes } from '@/stores/index'
 import type { SlotImage } from '@/stores/index'
 import SlotReel from '@/components/SlotReel.vue'
@@ -111,6 +111,13 @@ const fetchDummyApi = async (prompt: string, type: ImageTypes, signal: AbortSign
 const selectMode = (mode: string) => {
   selectedMode.value = mode
 }
+
+// Watch the userPrompt to automatically select "Free form" mode
+watch(userPrompt, (newValue) => {
+  if (newValue.trim() !== '' && selectedMode.value !== 'Free form') {
+    selectMode('Free form')
+  }
+})
 </script>
 
 <template>
@@ -279,14 +286,6 @@ const selectMode = (mode: string) => {
     1px -1px 0 #000,
     -1px 1px 0 #000,
     1px 1px 0 #000;
-}
-
-.generate-btn {
-  left: 1157px;
-  background: url('@/assets/make.png') no-repeat center center;
-}
-
-.cancel-btn {
   left: 1400px;
   background: #ff0000;
   color: #ffffff;
@@ -296,6 +295,11 @@ const selectMode = (mode: string) => {
   cursor: pointer;
   border: 1px solid #464545;
   z-index: 11;
+}
+
+.generate-btn {
+  left: 1157px;
+  background: url('@/assets/make.png') no-repeat center center;
 }
 
 .generate-btn::before,
