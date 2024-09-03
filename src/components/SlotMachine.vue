@@ -222,9 +222,10 @@ watch(userPrompt, (newValue) => {
   left: 515px;
   width: 600px;
   height: 30px;
-  background-color: transparent;
-  color: rgb(0, 0, 0);
+  background-color: #120604;
+  color: rgb(253 253 253);
   padding-left: 10px;
+  font-size: 17px;
   &::placeholder {
     color: rgba(0, 0, 0, 0.5); /* Placeholder color */
     opacity: 1; /* Ensures the placeholder is fully opaque */
