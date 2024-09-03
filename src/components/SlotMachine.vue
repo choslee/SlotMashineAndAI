@@ -2,16 +2,15 @@
 import { ref, onMounted, watch } from 'vue'
 import { useSlotStore, ImageTypes, starterImages } from '@/stores/index'
 import SlotReel from '@/components/SlotReel.vue'
-
-// Import button images
-import makeRound from '@/assets/make_round.png'
-import makeRoundPress from '@/assets/make_round_press.png'
+import WarningModal from '@/components/WarningModal.vue'
 
 const slotStore = useSlotStore()
 const userPrompt = ref('')
 const isFetching = ref(false) // Track API call state
 const selectedMode = ref('Free form')
 const isPressed = ref(false)
+const showModal = ref(false) // Track modal visibility
+const modalMessage = ref('') // Message for the modal
 let abortRequestController: AbortController | null = null
 let cyberPunkPrompt = 'Cyberpunk'
 
@@ -21,7 +20,9 @@ onMounted(() => {
 
 const generateNewImages = async () => {
   if (selectedMode.value === 'Free form' && userPrompt.value.trim() === '') {
-    alert('You have selected "Free form", you must enter a prompt.')
+    modalMessage.value =
+      '"Free form" is selected, please first enter a prompt before try to generate new images!!! '
+    showModal.value = true
     return
   }
 
@@ -121,6 +122,8 @@ watch(userPrompt, (newValue) => {
       <div class="loader"></div>
       <p>Please wait, generating images!</p>
     </div>
+
+    <WarningModal :isVisible="showModal" :message="modalMessage" @close="showModal = false" />
 
     <div class="additional-buttons">
       <button
