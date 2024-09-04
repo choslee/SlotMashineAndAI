@@ -18,14 +18,18 @@ onMounted(() => {
   slotStore.initializeImages(starterImages)
 })
 
-const generateNewImages = async () => {
-  if (selectedMode.value === 'Free form' && userPrompt.value.trim() === '') {
-    modalMessage.value =
-      '"Free form" is selected, please first enter a prompt before try to generate new images!!! '
-    showModal.value = true
-    return
+// Watch the userPrompt to automatically select "Free form" mode
+watch(userPrompt, (newValue) => {
+  if (newValue.trim() !== '' && selectedMode.value !== 'Free form') {
+    setSelectMode('Free form')
   }
+})
 
+function setSelectMode(mode: string) {
+  selectedMode.value = mode
+}
+
+async function onGenerateNewImagesHandler() {
   abortRequestController = new AbortController()
   const { signal } = abortRequestController
   isFetching.value = true
@@ -33,11 +37,18 @@ const generateNewImages = async () => {
   try {
     for (const image of slotStore.images) {
       if (selectedMode.value === 'Free form') {
-        console.log(
-          'After Free form input ' + userPrompt.value + ' fetching new image for:' + image.type
-        )
-        const response = await fetchDummyApi(userPrompt.value, image.type, signal)
-        slotStore.updateImage(image.type, response.newSrc, image.label)
+        if (userPrompt.value.trim() === '') {
+          modalMessage.value =
+            '"Free form" is selected, please first enter a prompt before try to generate new images!!! '
+          showModal.value = true
+          return
+        } else {
+          console.log(
+            'After Free form input ' + userPrompt.value + ' fetching new image for:' + image.type
+          )
+          const response = await fetchDummyApi(userPrompt.value, image.type, signal)
+          slotStore.updateImage(image.type, response.newSrc, image.label)
+        }
       } else if (selectedMode.value === 'Cyberpunk') {
         console.log('After Cyberpunk selected fetching new image for:', image.type)
         const response = await fetchDummyApi(cyberPunkPrompt, image.type, signal)
@@ -59,7 +70,7 @@ const generateNewImages = async () => {
   }
 }
 
-const cancelRequest = () => {
+function onCancelRequestHandler() {
   console.log('Cancel button clicked')
 
   if (abortRequestController) {
@@ -84,13 +95,7 @@ const cancelRequest = () => {
   isFetching.value = false
 }
 
-const handleButtonClick = () => {
-  if (!isFetching.value) {
-    generateNewImages()
-  }
-}
-
-const fetchDummyApi = async (prompt: string, type: ImageTypes, signal: AbortSignal) => {
+async function fetchDummyApi(prompt: string, type: ImageTypes, signal: AbortSignal) {
   return new Promise<{ newSrc: string }>((resolve, reject) => {
     setTimeout(() => {
       if (signal.aborted) {
@@ -100,17 +105,6 @@ const fetchDummyApi = async (prompt: string, type: ImageTypes, signal: AbortSign
     }, 1000)
   })
 }
-
-const selectMode = (mode: string) => {
-  selectedMode.value = mode
-}
-
-// Watch the userPrompt to automatically select "Free form" mode
-watch(userPrompt, (newValue) => {
-  if (newValue.trim() !== '' && selectedMode.value !== 'Free form') {
-    selectMode('Free form')
-  }
-})
 </script>
 
 <template>
@@ -131,16 +125,16 @@ watch(userPrompt, (newValue) => {
         :disabled="isFetching"
         @mousedown="isPressed = true"
         @mouseup="isPressed = false"
-        @click="handleButtonClick"
+        @click="onGenerateNewImagesHandler"
       ></button>
       <button
-        @click="selectMode('Cyberpunk')"
+        @click="setSelectMode('Cyberpunk')"
         :class="['small-button', selectedMode === 'Cyberpunk' ? 'selected' : '']"
       >
         Cyberpunk
       </button>
       <button
-        @click="selectMode('Free form')"
+        @click="setSelectMode('Free form')"
         :class="['small-button', selectedMode === 'Free form' ? 'selected' : '']"
       >
         Free form
@@ -156,8 +150,12 @@ watch(userPrompt, (newValue) => {
       />
     </div>
     <input v-model="userPrompt" class="prompt-input" type="text" placeholder="Enter prompt here" />
-    <button :disabled="isFetching" @click="handleButtonClick" class="generate-btn"></button>
-    <button v-if="isFetching" @click="cancelRequest" class="cancel-btn">Cancel</button>
+    <button
+      :disabled="isFetching"
+      @click="onGenerateNewImagesHandler"
+      class="generate-btn"
+    ></button>
+    <button v-if="isFetching" @click="onCancelRequestHandler" class="cancel-btn">Cancel</button>
   </div>
 </template>
 
@@ -222,7 +220,7 @@ watch(userPrompt, (newValue) => {
   padding-left: 10px;
   font-size: 17px;
   &::placeholder {
-    color: rgba(0, 0, 0, 0.5); /* Placeholder color */
+    color: rgba(255, 255, 255, 0.5); /* Placeholder color */
     opacity: 1; /* Ensures the placeholder is fully opaque */
   }
 }
