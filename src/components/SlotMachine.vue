@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useSlotStore, ImageTypes, starterImages } from '@/stores/index'
+import type { SlotImage } from '@/stores/index'
 import SlotReel from '@/components/SlotReel.vue'
 import WarningModal from '@/components/WarningModal.vue'
+
+import makeRound from '@/assets/make_round.png'
+import makeRoundPress from '@/assets/make_round_press.png'
 
 const slotStore = useSlotStore()
 const userPrompt = ref('')
@@ -12,7 +16,23 @@ const isPressed = ref(false)
 const showModal = ref(false) // Track modal visibility
 const modalMessage = ref('') // Message for the modal
 let abortRequestController: AbortController | null = null
-let cyberPunkPrompt = 'Cyberpunk'
+
+// Base URL for the API
+const BASE_URL = 'http://fooocus-api.mixashin.com:60808'
+
+// Mapping image types to filenames and special texts prompt
+const imageTypeMap = {
+  [ImageTypes.A]: { filename: 'A.jpg', specialText: 'letter A' },
+  [ImageTypes.K]: { filename: 'K.jpg', specialText: 'letter K' },
+  [ImageTypes.Q]: { filename: 'Q.jpg', specialText: 'letter Q' },
+  [ImageTypes.J]: { filename: 'J.jpg', specialText: 'letter J' },
+  [ImageTypes.N9]: { filename: '9.jpg', specialText: 'number 9' },
+  [ImageTypes.N10]: { filename: '10.jpg', specialText: 'number 10' },
+  [ImageTypes.Gun]: { filename: 'gun.jpg', specialText: 'water gun' },
+  [ImageTypes.Hat]: { filename: 'hat.jpg', specialText: 'top hat' },
+  [ImageTypes.Dog]: { filename: 'dog.jpg', specialText: 'small dog' },
+  [ImageTypes.Face]: { filename: 'face.jpg', specialText: 'pretty face' }
+}
 
 onMounted(() => {
   slotStore.initializeImages(starterImages)
@@ -29,6 +49,63 @@ function setSelectMode(mode: string) {
   selectedMode.value = mode
 }
 
+async function generateImageForSlot(image: SlotImage, prompt: string, signal: AbortSignal) {
+  const specialText = imageTypeMap[image.type]?.specialText || ''
+  const finalPrompt = `${prompt}, ${specialText}, frame outer edge, background`
+  const filenamePlaceholder = imageTypeMap[image.type]?.filename || `${image.type}.jpg`
+
+  const body = JSON.stringify({
+    prompt: finalPrompt,
+    negative_prompt: '',
+    style_selections: [],
+    performance_selection: 'Speed',
+    aspect_ratios_selection: '1024*1024',
+    image_seed: -1,
+    guidance_scale: 16.33,
+    base_model_name: 'juggernautXL_juggernautX.safetensors',
+    image_prompts: [
+      {
+        cn_img: `http://mixashin.com/aislot/${filenamePlaceholder}`,
+        cn_stop: 0.5,
+        cn_weight: 1,
+        cn_type: 'PyraCanny'
+      },
+      {
+        cn_img: 'http://mixashin.com/aislot/frame.jpg',
+        cn_stop: 0.4,
+        cn_weight: 1,
+        cn_type: 'PyraCanny'
+      }
+    ]
+  })
+
+  const response = await fetch(`${BASE_URL}/v2/generation/image-prompt`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body,
+    signal
+  })
+
+  if (!response.ok) {
+    modalMessage.value = 'Failed to generate image. Please try again.'
+    showModal.value = true
+    throw new Error('Failed to generate image')
+  }
+
+  const responseData = await response.json()
+
+  // Parse the image URL from the response and replace the base URL
+  let imageUrl = responseData[0].url
+  if (imageUrl.startsWith('http://')) {
+    imageUrl = imageUrl.replace('http://10.0.0.10:8888', BASE_URL)
+  } else {
+    imageUrl = `${BASE_URL}${imageUrl}`
+  }
+  return imageUrl
+}
+
 async function onGenerateNewImagesHandler() {
   abortRequestController = new AbortController()
   const { signal } = abortRequestController
@@ -36,47 +113,54 @@ async function onGenerateNewImagesHandler() {
 
   try {
     for (const image of slotStore.images) {
-      if (selectedMode.value === 'Free form') {
-        if (userPrompt.value.trim() === '') {
-          modalMessage.value =
-            '"Free form" is selected, please first enter a prompt before try to generate new images!!! '
-          showModal.value = true
-          return
-        } else {
-          console.log(
-            'After Free form input ' + userPrompt.value + ' fetching new image for:' + image.type
-          )
-          const response = await fetchDummyApi(userPrompt.value, image.type, signal)
-          slotStore.updateImage(image.type, response.newSrc, image.label)
-        }
-      } else if (selectedMode.value === 'Cyberpunk') {
-        console.log('After Cyberpunk selected fetching new image for:', image.type)
-        const response = await fetchDummyApi(cyberPunkPrompt, image.type, signal)
-        slotStore.updateImage(image.type, response.newSrc, image.label)
+      let userPromptInput = userPrompt.value
+      if (selectedMode.value === 'Cyberpunk') {
+        userPromptInput = 'Cyberpunk'
       }
+      // Generate a new image for the current slot
+      const newImageUrl = await generateImageForSlot(image, userPromptInput, signal)
+
+      // Update the slotStore with the new image URL
+      slotStore.updateImage(image.id, newImageUrl, image.label)
     }
   } catch (err) {
-    if (err instanceof Error) {
-      if (err.name === 'AbortError') {
-        console.log('API call was cancelled')
-      } else {
-        console.error('An error occurred:', err.message)
-      }
+    if (err instanceof Error && err.name === 'AbortError') {
+      console.log('API call was cancelled')
     } else {
-      console.error('An unexpected error occurred:', err)
+      console.error('An error occurred:', err)
+      modalMessage.value = 'Something gone wrong. Please try again.'
+      showModal.value = true
     }
   } finally {
-    isFetching.value = false // Reset fetching state when done
+    isFetching.value = false
   }
 }
 
-function onCancelRequestHandler() {
+async function onCancelRequestHandler() {
   console.log('Cancel button clicked')
 
   if (abortRequestController) {
     console.log('Aborting ongoing requests')
     abortRequestController.abort()
     abortRequestController = null
+  }
+  try {
+    const stopResponse = await fetch(`${BASE_URL}/v1/generation/stop`, {
+      method: 'POST'
+    })
+    console.log('Stop API response:', stopResponse)
+
+    if (!stopResponse.ok) {
+      modalMessage.value = 'Failed to stop the image generation process. Please try again.'
+      showModal.value = true
+      throw new Error('Failed to stop the image generation process')
+    }
+
+    console.log('Image generation successfully stopped')
+  } catch (err) {
+    modalMessage.value = 'Error while stopping the image generation process. Please try again.'
+    showModal.value = true
+    console.error('Error while stopping the image generation process:', err)
   }
 
   // Check if all images have a non-empty src value
@@ -93,17 +177,6 @@ function onCancelRequestHandler() {
   }
 
   isFetching.value = false
-}
-
-async function fetchDummyApi(prompt: string, type: ImageTypes, signal: AbortSignal) {
-  return new Promise<{ newSrc: string }>((resolve, reject) => {
-    setTimeout(() => {
-      if (signal.aborted) {
-        return reject(new DOMException('Aborted', 'AbortError'))
-      }
-      resolve({ newSrc: 'data:image/jpeg;base64,newImageSrc' })
-    }, 1000)
-  })
 }
 </script>
 
@@ -145,8 +218,8 @@ async function fetchDummyApi(prompt: string, type: ImageTypes, signal: AbortSign
       <SlotReel
         v-for="(image, index) in slotStore.images"
         :key="index"
+        :id="`reel-${index}`"
         :image="image"
-        :id="`reel-${index + 1}`"
       />
     </div>
     <input v-model="userPrompt" class="prompt-input" type="text" placeholder="Enter prompt here" />
@@ -220,8 +293,8 @@ async function fetchDummyApi(prompt: string, type: ImageTypes, signal: AbortSign
   padding-left: 10px;
   font-size: 17px;
   &::placeholder {
-    color: rgba(255, 255, 255, 0.5); /* Placeholder color */
-    opacity: 1; /* Ensures the placeholder is fully opaque */
+    color: rgba(255, 255, 255, 0.5);
+    opacity: 1;
   }
 }
 
@@ -267,7 +340,7 @@ async function fetchDummyApi(prompt: string, type: ImageTypes, signal: AbortSign
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0); /* Start with no color */
+  background-color: rgba(0, 0, 0, 0);
   transition: background-color 0.3s ease;
 }
 
@@ -282,10 +355,10 @@ async function fetchDummyApi(prompt: string, type: ImageTypes, signal: AbortSign
 }
 
 .small-button {
-  position: absolute; /* Allow positioning with top and left */
+  position: absolute;
   width: 140px;
   height: 45px;
-  background-color: #3d1603; /* Default button color */
+  background-color: #3d1603;
   color: #fff;
   border: none;
   border-radius: 5px;
@@ -293,45 +366,44 @@ async function fetchDummyApi(prompt: string, type: ImageTypes, signal: AbortSign
   font-weight: bold;
   text-align: center;
   line-height: 45px;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2); /* 3D effect for unselected button */
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
   transition:
     background-color 0.3s ease,
     box-shadow 0.3s ease;
 }
 
 .small-button:nth-child(2) {
-  top: 245px; /* Position relative to the big button */
-  left: 10px; /* Adjust left position as needed */
+  top: 245px;
+  left: 10px;
 }
 
 .small-button:nth-child(3) {
-  top: 300px; /* Position relative to the big button */
-  left: 10px; /* Adjust left position as needed */
+  top: 300px;
+  left: 10px;
 }
 
 .small-button.selected {
-  background-color: #4f2d1b; /* Lighter shade when selected */
-  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4); /* Pressed 3D effect for selected button */
+  background-color: #4f2d1b;
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4);
 }
 
-/* Loader Styles */
 .loader-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent overlay */
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 10; /* Ensure the loader is on top */
+  z-index: 10;
 }
 
 .loader {
-  border: 8px solid #f3f3f3; /* Light grey */
-  border-top: 8px solid #3498db; /* Blue */
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #3498db;
   border-radius: 50%;
   width: 60px;
   height: 60px;
