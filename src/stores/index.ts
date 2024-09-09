@@ -56,11 +56,10 @@ export const useSlotStore = defineStore('slot', {
     previousImages: [] as SlotImage[] // Store for previous images
   }),
   actions: {
-    updateImage(id: number, newSrc: string, label?: 'bonus' | 'scatter' | 'wild') {
-      const index = this.images.findIndex((img) => img.id === id)
-      if (index !== -1) {
-        this.images[index] = { ...this.images[index], src: newSrc, label }
-      }
+    updateImageByType(type: ImageTypes, newSrc: string, label?: 'bonus' | 'scatter' | 'wild') {
+      this.images = this.images.map((img) =>
+        img.type === type ? { ...img, src: newSrc, label } : img
+      )
     },
     initializeImages(images: SlotImage[]) {
       this.images = [...images]

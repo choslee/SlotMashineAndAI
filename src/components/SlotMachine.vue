@@ -109,26 +109,39 @@ async function generateImageForSlot(image: SlotImage, prompt: string, signal: Ab
 async function onGenerateNewImagesHandler() {
   abortRequestController = new AbortController()
   const { signal } = abortRequestController
+
+  if (selectedMode.value === 'Free form' && userPrompt.value.trim() === '') {
+    modalMessage.value =
+      'You selected "Free form", but the input field is empty. Please provide a prompt.'
+    showModal.value = true
+    return
+  }
+
   isFetching.value = true
 
   try {
-    for (const image of slotStore.images) {
+    const uniqueImagesByType = Array.from(
+      new Map(slotStore.images.map((img) => [img.type, img])).values()
+    )
+
+    for (const image of uniqueImagesByType) {
       let userPromptInput = userPrompt.value
       if (selectedMode.value === 'Cyberpunk') {
         userPromptInput = 'Cyberpunk'
       }
-      // Generate a new image for the current slot
+
+      // Generate a new image for the current slot type
       const newImageUrl = await generateImageForSlot(image, userPromptInput, signal)
 
-      // Update the slotStore with the new image URL
-      slotStore.updateImage(image.id, newImageUrl, image.label)
+      // Update all slots with the same type
+      slotStore.updateImageByType(image.type, newImageUrl, image.label)
     }
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {
       console.log('API call was cancelled')
     } else {
       console.error('An error occurred:', err)
-      modalMessage.value = 'Something gone wrong. Please try again.'
+      modalMessage.value = 'Something went wrong. Please try again.'
       showModal.value = true
     }
   } finally {
